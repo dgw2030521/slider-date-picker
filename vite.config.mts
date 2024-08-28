@@ -26,6 +26,7 @@ export default defineConfig({
       name: 'slider-date-picker',
       fileName: format => `slider-date-picker.${format}.js`,
     },
+    // sourcemap: true,
     rollupOptions: {
       // 确保外部化正确处理react
       external: ['react', 'react-dom'],

@@ -21,7 +21,7 @@
   "scripts": {
     "lint": "eslint . ",
     "dev": "vite --mode dev",
-    "build": "vite build --mode production",
+    "build": "vite build",
     "prerelease": "npm run build",
     "release": "npm version -m \"New version: %s\"",
     "--postrelease": "npm run push && npm publish",
