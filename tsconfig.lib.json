@@ -17,6 +17,7 @@
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
     "baseUrl": "./",
+    "rootDir": "src",
     "paths": {
       "@/*": ["src/*"]
     },
@@ -24,5 +25,6 @@
     "declarationDir": "./dist", //声明文件输出的目录
     "emitDeclarationOnly": true //只输出声明文件，不转译ts文件
   },
-  "include": ["src", "typings.d.ts"]
+  "include": ["src", "typings.d.ts"],
+  "exclude": ["node_modules", "dist"]
 }
