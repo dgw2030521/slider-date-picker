@@ -1,6 +1,8 @@
 import react from '@vitejs/plugin-react';
 import * as path from 'path';
 import { defineConfig } from 'vite';
+// 可以使用vite-plugin-libcss
+// 在打包出来的 index.es.js 的第一行自动加上 `import style.css`
 import libCss from 'vite-plugin-libcss';
 
 function resolve(str: string) {
@@ -15,6 +17,8 @@ export default defineConfig({
     outDir: 'dist',
     // 防止 vite 将 rgba() 颜色转化为 #RGBA 十六进制
     cssTarget: 'chrome61',
+    // 然后使用build.cssCodeSplit: true
+    // 给index.umd.js 生成内链css,不确定，[待验证，ts项目里没使用require验证]
     cssCodeSplit: true,
     lib: {
       // 组件库源码的入口文件
