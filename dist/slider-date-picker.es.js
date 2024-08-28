@@ -1,3 +1,4 @@
+import './assets/index.ec0d2b0c.css';
 import wa, { useRef as Hn, useState as Xe, useEffect as ti } from "react";
 function ri(e) {
   return e && e.__esModule && Object.prototype.hasOwnProperty.call(e, "default") ? e.default : e;
