@@ -1,26 +1,15 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
-    "useDefineForClassFields": true,
-    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "composite": true,
+    "target": "ES2022",
+    "lib": ["ES2023"],
     "module": "ESNext",
     "skipLibCheck": true,
 
-    /* Bundler mode */
     "moduleResolution": "bundler",
-    "moduleDetection": "force",
-    "resolveJsonModule": true,
-    // 启用 isolatedModules，保证文件都是module的方式使用
-    "isolatedModules": true,
-    "jsx": "react-jsx",
-    "esModuleInterop": false,
     "allowSyntheticDefaultImports": true,
-    "forceConsistentCasingInFileNames": true,
-    "baseUrl": "./",
-    "paths": {
-      "@/*": ["src/*"]
-    }
+    "isolatedModules": true,
+    "noEmit": true
   },
-  "include": ["vite.config.mts", ".eslintrc.cjs"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["vite.config.mts", ".eslintrc.cjs"]
 }
