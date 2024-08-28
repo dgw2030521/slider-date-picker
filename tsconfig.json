@@ -24,14 +24,6 @@
       "@/*": ["src/*"]
     }
   },
-  "include": [
-    "src",
-    "example",
-    "*.d.ts",
-    "vite.config.mts",
-    ".eslintrc.cjs",
-    "prettier.config.cjs",
-    "commitlint.config.js"
-  ],
+  "include": ["src", "example", "*.d.ts", "vite.config.mts", ".eslintrc.cjs"],
   "exclude": ["**/node_modules", "build", "dist", "scripts"]
 }
