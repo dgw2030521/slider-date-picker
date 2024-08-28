@@ -9,13 +9,13 @@
     "dist"
   ],
   "type": "module",
-  "main": "./dist/slider-date-picker.umd.js",
-  "module": "./dist/slider-date-picker.es.js",
-  "typings": "./dist/slider-date-picker.d.ts",
+  "main": "./dist/index.umd.js",
+  "module": "./dist/index.es.js",
+  "typings": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/slider-date-picker.es.js",
-      "require": "./dist/slider-date-picker.umd.js"
+      "import": "./dist/index.es.js",
+      "require": "./dist/index.umd.js"
     }
   },
   "scripts": {

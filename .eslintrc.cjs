@@ -113,7 +113,8 @@ module.exports = {
     'jsx-a11y/label-has-for': 0,
   },
   parserOptions: {
-    project: ['./tsconfig.json', './tsconfig.node.json', './tsconfig.lib.json'],
+    // 加载所以ts和tsx文件
+    project: ['tsconfig.*.json'],
     ecmaFeatures: {
       jsx: true,
     },

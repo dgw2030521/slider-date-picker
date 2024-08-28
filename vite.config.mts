@@ -31,7 +31,7 @@ export default defineConfig({
       // 组件库源码的入口文件
       entry: resolve('src/index.tsx'),
       name: 'slider-date-picker',
-      fileName: format => `slider-date-picker.${format}.js`,
+      fileName: format => `index.${format}.js`,
     },
     // sourcemap: true,
     rollupOptions: {
