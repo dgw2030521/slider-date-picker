@@ -27,3 +27,10 @@
   </SliderDatePicker>
 </div>
 ```
+
+### 开发
+
+- git acm
+- npm run release patch
+- npm publish
+- git push
