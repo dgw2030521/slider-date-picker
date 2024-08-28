@@ -113,7 +113,7 @@ module.exports = {
     'jsx-a11y/label-has-for': 0,
   },
   parserOptions: {
-    project: ['./tsconfig.json', './tsconfig.*.json'],
+    project: ['./tsconfig.json', './tsconfig.node.json', './tsconfig.lib.json'],
     ecmaFeatures: {
       jsx: true,
     },

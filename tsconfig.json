@@ -1,29 +1,11 @@
 {
-  "compilerOptions": {
-    "target": "ESNext",
-    "useDefineForClassFields": true,
-    "lib": ["DOM", "DOM.Iterable", "ESNext"],
-    "module": "ESNext",
-    "skipLibCheck": true,
-
-    /* Bundler mode */
-    "moduleResolution": "bundler",
-    "moduleDetection": "force",
-    "resolveJsonModule": true,
-    // 启用 isolatedModules，保证文件都是module的方式使用
-    "isolatedModules": true,
-    "jsx": "react-jsx",
-    "declaration": true,
-    "declarationDir": "./dist",
-    "esModuleInterop": false,
-    "allowSyntheticDefaultImports": true,
-    "forceConsistentCasingInFileNames": true,
-
-    "baseUrl": "./",
-    "paths": {
-      "@/*": ["src/*"]
+  "files": [],
+  "references": [
+    {
+      "path": "./tsconfig.lib.json"
+    },
+    {
+      "path": "./tsconfig.node.json"
     }
-  },
-  "include": ["src", "example", "*.d.ts", "vite.config.mts", ".eslintrc.cjs"],
-  "exclude": ["**/node_modules", "build", "dist", "scripts"]
+  ]
 }

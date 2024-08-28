@@ -1,6 +1,7 @@
 import react from '@vitejs/plugin-react';
 import * as path from 'path';
 import { defineConfig } from 'vite';
+import dts from 'vite-plugin-dts';
 // 可以使用vite-plugin-libcss
 // 在打包出来的 index.es.js 的第一行自动加上 `import style.css`
 import libCss from 'vite-plugin-libcss';
@@ -10,7 +11,13 @@ function resolve(str: string) {
 }
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react(), libCss()],
+  plugins: [
+    react(),
+    libCss(),
+    dts({
+      tsconfigPath: './tsconfig.lib.json',
+    }),
+  ],
   // 模块开发需要重新配置build，覆盖vite针对web项目的默认配置
   build: {
     // 打包输出的目录
