@@ -1,16 +1,39 @@
+/**
+ * 每个日期需要查询的信息，按月份查找
+ */
+import type React from 'react';
+import { useEffect, useRef, useState } from 'react';
 import classNames from 'classnames';
-import update from 'immutability-helper';
-import { map } from 'lodash-es';
 import moment from 'moment';
-import React, { useEffect, useRef, useState } from 'react';
-
+import { each, filter, findIndex, isEmpty, map } from 'lodash-es';
+import update from 'immutability-helper';
+import { Spin } from 'antd';
+import {
+  getMonthData,
+  getMonthPaddingTwoDate,
+  getMonthRenderDays,
+  getMonthRenderDaysObj,
+} from './utils';
+import type { RenderDaysType } from './utils';
 import styles from './index.module.scss';
-import { getMonthData, getMonthRenderDays } from './utils';
 
 interface SliderDatePickerProps {
   dateValue: string;
-  onChangeCallback: (value: moment.Moment) => void;
-  children: React.ReactNode | React.ReactElement;
+  /**
+   * 渲染日期节点
+   * @param dateObj 日期节点数据
+   * @param isCurrent 是否当前日期
+   * @param preCallbackOnClick 节点click事件时必须调用
+   */
+  renderDayNode: (
+    dateObj: RenderDaysType,
+    isCurrent: boolean,
+    preCallbackOnClick: (date: moment.Moment) => void,
+  ) => React.ReactNode | React.ReactElement;
+
+  getPolicyCountByDates: (dates: string[]) => Promise<number[]>;
+  leftSideContent?: React.ReactNode | React.ReactElement;
+  rightSideContent?: React.ReactNode | React.ReactElement;
 }
 
 // 一行展示12个
@@ -19,57 +42,59 @@ const SHOW_COUNT = 12;
 const STEP = 1;
 
 export default function SliderDatePicker(props: SliderDatePickerProps) {
-  const { dateValue, onChangeCallback, children } = props;
+  const {
+    dateValue,
+    leftSideContent,
+    rightSideContent,
+    renderDayNode,
+    getPolicyCountByDates,
+  } = props;
+
   const cardRefs = useRef({});
   const cardBoxRef = useRef(null);
   // 指定的当前日期
-  const $currentDate = dateValue ? moment(dateValue) : moment();
+  const _currentDate = dateValue ? moment(dateValue) : moment();
 
-  const monthsPadding = $currentDate.diff(moment(), 'months');
+  const monthsPadding = _currentDate.diff(moment(), 'months');
   if (Math.abs(monthsPadding) > 12) {
     return <span>默认日期不能超出当前时间12个月</span>;
   }
 
-  const [currentDate, setCurrentDate] = useState($currentDate);
+  const [currentDate, setCurrentDate] = useState(_currentDate);
 
-  const $monthData = getMonthData(currentDate);
+  const _monthData = getMonthData(currentDate);
   // month picker的数据
   const [monthPickerData, setMonthPickerData] =
-    useState<[number, number]>($monthData);
+    useState<[number, number]>(_monthData);
 
-  const $renderDates = getMonthRenderDays($monthData);
+  const _renderDates = getMonthRenderDaysObj(_monthData);
   // 所有用来渲染的日期
-  const [renderDates, setRenderDates] = useState($renderDates);
+  const [renderDates, setRenderDates] =
+    useState<RenderDaysType[]>(_renderDates);
   // 记录被渲染的月份
   const [recordMonths, setRecordMonths] = useState([
-    `${$monthData[0]}-${$monthData[1] + 1}`,
+    `${_monthData[0]}-${_monthData[1] + 1}`,
   ]);
 
+  const [loading, setLoading] = useState(false);
+  const [dealtMonths, setDealtMonths] = useState([]);
+
   // 头尾日期
-  const $firstDate = moment($renderDates[0]);
-  const [firstDate, setFirstDate] = useState(moment($renderDates[0]));
+  const [firstDate, setFirstDate] = useState(moment(_renderDates[0].date));
   const [lastDate, setLastDate] = useState(
-    $firstDate.clone().add(SHOW_COUNT - 1, 'd'),
+    moment(_renderDates[0].date)
+      .clone()
+      .add(SHOW_COUNT - 1, 'd'),
   );
   // card宽度
   const [cardWidth, setCardWidth] = useState(null);
-
-  /**
-   * 单击日期变化
-   * @param dateStr
-   */
-  const handleDateChange = (dateStr: string) => {
-    const currentMDate = moment(dateStr);
-    setCurrentDate(currentMDate);
-    onChangeCallback(currentMDate);
-  };
 
   /**
    * 计算diff并移动卡片
    * @param formDate
    * @param toDate
    * @param width
-   * @param offset 偏移量，新生的dom，可能原先容器存在scrolleft
+   * @param offset 偏移量，新生的dom，可能原先容器存在scrollLeft
    */
   const moveDateCard = (
     formDate: moment.Moment,
@@ -99,49 +124,57 @@ export default function SliderDatePicker(props: SliderDatePickerProps) {
     const monthDataList = [];
     let _newRenderDates = [];
     const _newRecordMonths = [];
-    const paddingCurrentToNow = cDate.diff(nowDate, 'months');
+    const paddingCurrentToNow = getMonthPaddingTwoDate(nowDate, cDate);
+
     if (paddingCurrentToNow > 0) {
-      // current在后，往前创建now的数据
       for (let i = 1; i <= paddingCurrentToNow + 1; i++) {
         const monthData = getMonthData(cDate.clone().subtract(i, 'M'));
         monthDataList.push(monthData);
       }
-      //  遍历monthDataList
+
       let renderDatesArr = [];
       for (let i = 0; i < monthDataList.length; i++) {
-        const nextMonthStr = `${monthDataList[i][0]}-${monthDataList[i][1] + 1}`;
+        const nextMonthStr = `${monthDataList[i][0]}-${
+          monthDataList[i][1] + 1
+        }`;
+
+        if (recordMonths.includes(nextMonthStr)) {
+          continue;
+        }
+
         _newRecordMonths.push(nextMonthStr);
 
-        const _renderDates = getMonthRenderDays(monthDataList[i]);
-        // 往前增加
+        const _renderDates = getMonthRenderDaysObj(monthDataList[i]);
         renderDatesArr = [..._renderDates, ...renderDatesArr];
       }
       _newRenderDates = update(renderDates, {
         $splice: [[0, 0, ...renderDatesArr]],
       });
     } else {
-      // current在前，往后创建now的数据
       for (let i = 1; i <= -paddingCurrentToNow; i++) {
         const monthData = getMonthData(cDate.clone().add(i, 'M'));
         monthDataList.push(monthData);
       }
-      //  遍历monthDataList
+
       let renderDatesArr = [];
       for (let i = 0; i < monthDataList.length; i++) {
-        const nextMonthStr = `${monthDataList[i][0]}-${monthDataList[i][1] + 1}`;
+        const nextMonthStr = `${monthDataList[i][0]}-${
+          monthDataList[i][1] + 1
+        }`;
+
+        if (recordMonths.includes(nextMonthStr)) {
+          continue;
+        }
 
         _newRecordMonths.push(nextMonthStr);
 
-        const _renderDates = getMonthRenderDays(monthDataList[i]);
-        // 往后增加
+        const _renderDates = getMonthRenderDaysObj(monthDataList[i]);
         renderDatesArr = [...renderDatesArr, ..._renderDates];
       }
       _newRenderDates = update(renderDates, {
         $splice: [[renderDates.length, 0, ...renderDatesArr]],
       });
     }
-
-    console.log('@@@monthDataList', monthDataList, _newRecordMonths);
 
     return {
       newRenderDates: _newRenderDates,
@@ -167,8 +200,6 @@ export default function SliderDatePicker(props: SliderDatePickerProps) {
         newRecordMonths: genRecordMonths,
       } = getMonthRenderDatesList(currentDate, nowDate);
 
-      console.log('@###最新的渲染日期', genRenderDates, genRecordMonths);
-
       setRenderDates(genRenderDates);
       setRecordMonths(genRecordMonths);
 
@@ -182,13 +213,12 @@ export default function SliderDatePicker(props: SliderDatePickerProps) {
       } else {
         // 往前
         setTimeout(() => {
-          console.log('----genRenderDates[0]', genRenderDates[0]);
           const startDate = moment(genRenderDates[0]);
           moveDateCard(nowDate, startDate, cardWidth, offset);
           setFirstDate(nowDate);
           setLastDate(nowDate.clone().add(SHOW_COUNT - 1, 'd'));
           console.log(
-            '新的开始结束',
+            '@###handleClickToday 新的开始结束',
             nowDate.format('YYYY-MM-DD'),
             nowDate
               .clone()
@@ -202,7 +232,7 @@ export default function SliderDatePicker(props: SliderDatePickerProps) {
       setFirstDate(nowDate);
       setLastDate(lastDate.clone().add(diff, 'd'));
       console.log(
-        '新的开始结束',
+        '@###handleClickToday 新的开始结束',
         nowDate.format('YYYY-MM-DD'),
         lastDate.clone().add(diff, 'd').format('YYYY-MM-DD'),
       );
@@ -224,7 +254,7 @@ export default function SliderDatePicker(props: SliderDatePickerProps) {
     monthData: [number, number],
     step: number,
   ) => {
-    const nextRenderDates = getMonthRenderDays(monthData);
+    const nextRenderDates = getMonthRenderDaysObj(monthData);
     let _newRenderDates = null;
     // 后加
     if (step > 0) {
@@ -268,7 +298,7 @@ export default function SliderDatePicker(props: SliderDatePickerProps) {
       const newLastDate = lastDate.clone().add(diff, 'd');
       setLastDate(newLastDate);
       console.log(
-        '新的开始结束',
+        '@###handleChangeMonth 新的开始结束',
         newFirstDate.format('YYYY-MM-DD'),
         newLastDate.format('YYYY-MM-DD'),
       );
@@ -282,10 +312,6 @@ export default function SliderDatePicker(props: SliderDatePickerProps) {
     const newFirstDate = firstDate.clone().add(step, 'd');
     const newLastDate = lastDate.clone().add(step, 'd');
 
-    // 如果后移动，接下来的元素是下个月第一天，切换为下个月
-    // 如果前移，接下来的元素是上个月最后一天，切换为上个月
-    // 没有dom，判断ref存在否，先生成再执行move
-
     const nextDate = dDate.clone().add(step, 'd');
     const nextDateStr = nextDate.format('YYYY-MM-DD');
     const nextDateDom = cardRefs.current[nextDateStr];
@@ -293,7 +319,6 @@ export default function SliderDatePicker(props: SliderDatePickerProps) {
     const nextMonthData = getMonthData(nextDate);
     setMonthPickerData(nextMonthData);
 
-    // 不存在，就创建
     if (!nextDateDom) {
       const nextMonthStr = `${nextMonthData[0]}-${nextMonthData[1] + 1}`;
       const newRecordMonths = update(recordMonths, {
@@ -304,14 +329,13 @@ export default function SliderDatePicker(props: SliderDatePickerProps) {
       setRenderDates(_newRenderDates);
 
       if (step > 0) {
-        // 往后移动
         setTimeout(() => {
           //   计算移动
           moveDateCard(nextDate, dDate, cardWidth);
           setFirstDate(newFirstDate);
           setLastDate(newLastDate);
           console.log(
-            '@@@新的开始结束',
+            '@@@handleSliderChange 新的开始结束',
             newFirstDate.format('YYYY-MM-DD'),
             newLastDate.format('YYYY-MM-DD'),
           );
@@ -324,7 +348,7 @@ export default function SliderDatePicker(props: SliderDatePickerProps) {
           setFirstDate(newFirstDate);
           setLastDate(newLastDate);
           console.log(
-            '@@@新的开始结束',
+            '@@@handleSliderChange 新的开始结束',
             newFirstDate.format('YYYY-MM-DD'),
             newLastDate.format('YYYY-MM-DD'),
           );
@@ -335,7 +359,7 @@ export default function SliderDatePicker(props: SliderDatePickerProps) {
       setFirstDate(newFirstDate);
       setLastDate(newLastDate);
       console.log(
-        '@@@新的开始结束',
+        '@@@handleSliderChange 新的开始结束',
         newFirstDate.format('YYYY-MM-DD'),
         newLastDate.format('YYYY-MM-DD'),
       );
@@ -347,14 +371,17 @@ export default function SliderDatePicker(props: SliderDatePickerProps) {
    * @param renderDateStrs 可渲染数据
    * @param currentDate 用来渲染蓝色
    */
-  const renderSlider = (renderDateStrs: string[], currentDate: any) => {
-    return map(renderDateStrs, dateStr => {
+  const renderSlider = (renderDateStrs: RenderDaysType[], currentDate: any) => {
+    return map(renderDateStrs, dateObj => {
+      const dateStr = dateObj.date;
       const mEndOfMonth = moment(dateStr).endOf('month');
       const endOfMonthStr = mEndOfMonth.format('YYYY-MM-DD');
 
-      const dayStr = dateStr.split('-')[2];
+      const isCurrent = dateStr === currentDate?.format('YYYY-MM-DD');
+
       return (
         <span
+          title={dateObj.date}
           className={classNames({
             [styles.cardBox]: true,
             [styles.endOfMonth]: dateStr === endOfMonthStr,
@@ -368,17 +395,9 @@ export default function SliderDatePicker(props: SliderDatePickerProps) {
             cardRefs.current[dateStr] = el;
           }}
         >
-          <span
-            className={classNames({
-              [styles.card]: true,
-              [styles.current]: dateStr === currentDate?.format('YYYY-MM-DD'),
-            })}
-            onClick={() => {
-              handleDateChange(dateStr);
-            }}
-          >
-            {dayStr}
-          </span>
+          {renderDayNode(dateObj, isCurrent, (selectedDate: moment.Moment) => {
+            setCurrentDate(selectedDate);
+          })}
         </span>
       );
     });
@@ -396,72 +415,136 @@ export default function SliderDatePicker(props: SliderDatePickerProps) {
     setLastDate(lastDate.clone().add(diff, 'd'));
   }, []);
 
+  /**
+   * 只请求未处理过的月份
+   * @param months
+   */
+  const handleGetPolicyCount = async (months: string[]) => {
+    let allDays = [];
+    for (let i = 0; i < months.length; i++) {
+      const cDateArr = months[i].split('-');
+      const cYear = Number.parseInt(cDateArr[0]);
+      const cMonth = Number.parseInt(cDateArr[1]) - 1;
+
+      const cDays = getMonthRenderDays([cYear, cMonth]);
+      allDays = [...allDays, ...cDays];
+    }
+
+    const result = await getPolicyCountByDates(allDays);
+    return {
+      params: allDays,
+      result,
+    };
+  };
+
+  useEffect(() => {
+    console.log('@###最新的渲染日期', renderDates, recordMonths);
+    const restMonths = filter(recordMonths, item => {
+      return !dealtMonths.includes(item);
+    });
+
+    if (!isEmpty(restMonths)) {
+      setLoading(true);
+      handleGetPolicyCount(restMonths).then(resp => {
+        setLoading(false);
+        setDealtMonths(recordMonths);
+        let optionsStr = {};
+        each(resp.params, (day, idx) => {
+          const $index = findIndex(renderDates, item => {
+            return item.date === day;
+          });
+          const $count = resp.result[idx];
+          const $option = {
+            [$index]: {
+              option: {
+                policyCount: {
+                  $set: $count,
+                },
+              },
+            },
+          };
+          optionsStr = { ...$option, ...optionsStr };
+        });
+        const newRenderDates = update(renderDates, {
+          ...optionsStr,
+        });
+        setRenderDates(newRenderDates);
+      });
+    }
+  }, [recordMonths, dealtMonths, renderDates]);
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <div className={styles.title}>{children}</div>
-        <div className={styles.dateOperate}>
-          <div
-            className={styles.today}
+        <div className={styles.leftSide}>
+          <div className={styles.leftContent}>{leftSideContent}</div>
+          <div className={styles.dateOperate}>
+            <div
+              className={styles.today}
+              onClick={() => {
+                handleClickToday();
+              }}
+            >
+              今日
+            </div>
+            <div className={styles.picker}>
+              <span
+                className={classNames({
+                  [styles.btn]: true,
+                  [styles.left]: true,
+                })}
+                onClick={() => {
+                  handleChangeMonth(monthPickerData, -1);
+                }}
+              />
+              {/* @NOTICE 最后一天消失才显示下个月 */}
+              <span>
+                <span className={styles.year}>{monthPickerData?.[0]}</span>年
+                <span className={styles.month}>{monthPickerData?.[1] + 1}</span>
+                月
+              </span>
+              <span
+                className={classNames({
+                  [styles.btn]: true,
+                  [styles.right]: true,
+                })}
+                onClick={() => {
+                  handleChangeMonth(monthPickerData, 1);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+        <div className={styles.rightSide}>{rightSideContent}</div>
+      </div>
+      <Spin spinning={loading}>
+        <div className={styles.slider}>
+          <span
+            className={classNames({
+              [styles.btn]: true,
+              [styles.left]: true,
+            })}
             onClick={() => {
-              handleClickToday();
+              handleSliderChange(firstDate, -STEP);
             }}
+          />
+          <div
+            className={classNames({ [styles.cardContainer]: true })}
+            ref={cardBoxRef}
           >
-            今日
+            {renderSlider(renderDates, currentDate)}
           </div>
-          <div className={styles.picker}>
-            <span
-              className={classNames({
-                [styles.btn]: true,
-                [styles.left]: true,
-              })}
-              onClick={() => {
-                handleChangeMonth(monthPickerData, -1);
-              }}
-            />
-            {/* @NOTICE 最后一天消失才显示下个月 */}
-            <span>
-              <span className={styles.year}>{monthPickerData?.[0]}</span>年-
-              <span className={styles.month}>{monthPickerData?.[1] + 1}</span>月
-            </span>
-            <span
-              className={classNames({
-                [styles.btn]: true,
-                [styles.right]: true,
-              })}
-              onClick={() => {
-                handleChangeMonth(monthPickerData, 1);
-              }}
-            />
-          </div>
+          <span
+            className={classNames({
+              [styles.btn]: true,
+              [styles.right]: true,
+            })}
+            onClick={() => {
+              handleSliderChange(lastDate, STEP);
+            }}
+          />
         </div>
-      </div>
-      <div className={styles.slider}>
-        <span
-          className={classNames({
-            [styles.btn]: true,
-            [styles.left]: true,
-          })}
-          onClick={() => {
-            handleSliderChange(firstDate, -STEP);
-          }}
-        />
-        <div
-          className={classNames({ [styles.cardContainer]: true })}
-          ref={cardBoxRef}
-        >
-          {renderSlider(renderDates, currentDate)}
-        </div>
-        <span
-          className={classNames({
-            [styles.btn]: true,
-            [styles.right]: true,
-          })}
-          onClick={() => {
-            handleSliderChange(lastDate, STEP);
-          }}
-        />
-      </div>
+      </Spin>
     </div>
   );
 }

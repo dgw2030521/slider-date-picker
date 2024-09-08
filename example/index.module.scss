@@ -1,0 +1,64 @@
+.card {
+  cursor: pointer;
+  display: flex;
+  padding: 20px 16px 16px 16px;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 16px;
+  border-radius: 8px;
+  border: 1px solid #0076ff1a;
+  background: linear-gradient(113deg, #1fa5ff29 18.63%, #0076ff29 100%);
+
+  &.current {
+    background: linear-gradient(113deg, #1fa5ff 18.63%, #0076ff 100%);
+    color: #fff;
+
+    .count {
+      color: #0076ff;
+    }
+    .day {
+      color: #fff;
+    }
+  }
+
+  .day {
+    color: #070c1b;
+    text-align: center;
+    font-family: 'PingFang SC';
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 20px;
+    text-transform: uppercase;
+  }
+  .count {
+    width: 48px;
+    height: 24px;
+    flex-shrink: 0;
+    border-radius: 100px;
+    background: #fff;
+    color: #999999;
+  }
+}
+
+.card:hover {
+  color: #fff;
+}
+
+.headTitle {
+  color: #070c1b;
+  font-family: 'FZZhengHeiS-B-GB';
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 24px;
+}
+
+.operBox {
+  width: 295px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 20px;
+  background: #fff;
+}
