@@ -1,21 +1,22 @@
 /**
  * 每个日期需要查询的信息，按月份查找
  */
+import { Spin } from 'antd';
+import classNames from 'classnames';
+import update from 'immutability-helper';
+import { each, filter, findIndex, isEmpty, map } from 'lodash-es';
+import moment from 'moment';
 import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
-import classNames from 'classnames';
-import moment from 'moment';
-import { each, filter, findIndex, isEmpty, map } from 'lodash-es';
-import update from 'immutability-helper';
-import { Spin } from 'antd';
+
+import styles from './index.module.scss';
+import type { RenderDaysType } from './utils';
 import {
   getMonthData,
   getMonthPaddingTwoDate,
   getMonthRenderDays,
   getMonthRenderDaysObj,
 } from './utils';
-import type { RenderDaysType } from './utils';
-import styles from './index.module.scss';
 
 interface SliderDatePickerProps {
   dateValue: string;
@@ -423,8 +424,8 @@ export default function SliderDatePicker(props: SliderDatePickerProps) {
     let allDays = [];
     for (let i = 0; i < months.length; i++) {
       const cDateArr = months[i].split('-');
-      const cYear = Number.parseInt(cDateArr[0]);
-      const cMonth = Number.parseInt(cDateArr[1]) - 1;
+      const cYear = Number.parseInt(cDateArr[0], 10);
+      const cMonth = Number.parseInt(cDateArr[1], 10) - 1;
 
       const cDays = getMonthRenderDays([cYear, cMonth]);
       allDays = [...allDays, ...cDays];
