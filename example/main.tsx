@@ -15,7 +15,7 @@ function getRandomNumber(min: number, max: number) {
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
 root.render(
-  <div style={{ width: 1200 }}>
+  <div style={{ width: 1300 }}>
     <SliderDatePicker
       leftSideContent={<span className={styles.headTitle}>政策日历</span>}
       rightSideContent={<div className={styles.operBox}>容器内容自定义</div>}
