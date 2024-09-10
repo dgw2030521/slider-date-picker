@@ -1,5 +1,6 @@
 import './index.css';
 
+import { Button } from 'antd';
 import classNames from 'classnames';
 import moment from 'moment/moment';
 import React from 'react';
@@ -18,7 +19,26 @@ root.render(
   <div style={{ width: 1300 }}>
     <SliderDatePicker
       leftSideContent={<span className={styles.headTitle}>政策日历</span>}
-      rightSideContent={<div className={styles.operBox}>容器内容自定义</div>}
+      rightSideContent={setRefreshCond => {
+        return (
+          <div className={styles.operBox}>
+            <Button
+              onClick={() => {
+                setRefreshCond({ cond: 1 });
+              }}
+            >
+              11
+            </Button>
+            <Button
+              onClick={() => {
+                setRefreshCond({ cond: 2 });
+              }}
+            >
+              22
+            </Button>
+          </div>
+        );
+      }}
       dateValue="2024-07-02"
       renderDayNode={(dateObj, isCurrent, preCallbackOnClick) => {
         const dayStr = Number.parseInt(dateObj.date.split('-')[2], 10);
@@ -40,12 +60,14 @@ root.render(
           </div>
         );
       }}
-      getPolicyCountByDates={async days => {
+      getPolicyCountByDates={async (days, refreshCond) => {
+        console.log('refreshCond', refreshCond);
         return new Promise(function (resolve) {
           setTimeout(() => {
             resolve(
               Array.from({ length: days.length }, (_, index) => {
-                return getRandomNumber(1, 100);
+                const random = getRandomNumber(1, 100);
+                return refreshCond?.cond || 0;
               }),
             );
           }, 1000);

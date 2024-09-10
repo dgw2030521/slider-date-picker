@@ -32,9 +32,14 @@ interface SliderDatePickerProps {
     preCallbackOnClick: (date: moment.Moment) => void,
   ) => React.ReactNode | React.ReactElement;
 
-  getPolicyCountByDates: (dates: string[]) => Promise<number[]>;
+  getPolicyCountByDates: (
+    dates: string[],
+    refreshCond: {},
+  ) => Promise<number[]>;
   leftSideContent?: React.ReactNode | React.ReactElement;
-  rightSideContent?: React.ReactNode | React.ReactElement;
+  rightSideContent?: (
+    setRefreshCond: (refreshCond: any) => void,
+  ) => React.ReactNode | React.ReactElement;
 }
 
 // 一行展示12个
@@ -79,6 +84,7 @@ export default function SliderDatePicker(props: SliderDatePickerProps) {
 
   const [loading, setLoading] = useState(false);
   const [dealtMonths, setDealtMonths] = useState([]);
+  const [refreshCond, setRefreshCond] = useState<any>();
 
   // 头尾日期
   const [firstDate, setFirstDate] = useState(moment(_renderDates[0].date));
@@ -420,7 +426,7 @@ export default function SliderDatePicker(props: SliderDatePickerProps) {
    * 只请求未处理过的月份
    * @param months
    */
-  const handleGetPolicyCount = async (months: string[]) => {
+  const handleGetPolicyCount = async (months: string[], refreshCond) => {
     let allDays = [];
     for (let i = 0; i < months.length; i++) {
       const cDateArr = months[i].split('-');
@@ -431,7 +437,7 @@ export default function SliderDatePicker(props: SliderDatePickerProps) {
       allDays = [...allDays, ...cDays];
     }
 
-    const result = await getPolicyCountByDates(allDays);
+    const result = await getPolicyCountByDates(allDays, refreshCond);
     return {
       params: allDays,
       result,
@@ -439,16 +445,16 @@ export default function SliderDatePicker(props: SliderDatePickerProps) {
   };
 
   useEffect(() => {
-    console.log('@###最新的渲染日期', renderDates, recordMonths);
+    console.log('@###最新的渲染日期', renderDates, recordMonths, refreshCond);
     const restMonths = filter(recordMonths, item => {
       return !dealtMonths.includes(item);
     });
 
-    if (!isEmpty(restMonths)) {
+    if (!isEmpty(restMonths) || !isEmpty(refreshCond)) {
       setLoading(true);
-      handleGetPolicyCount(restMonths).then(resp => {
+      handleGetPolicyCount(restMonths, refreshCond).then(resp => {
         setLoading(false);
-        setDealtMonths(recordMonths);
+        // setDealtMonths(recordMonths);
         let optionsStr = {};
         each(resp.params, (day, idx) => {
           const $index = findIndex(renderDates, item => {
@@ -472,7 +478,7 @@ export default function SliderDatePicker(props: SliderDatePickerProps) {
         setRenderDates(newRenderDates);
       });
     }
-  }, [recordMonths, dealtMonths, renderDates]);
+  }, [recordMonths, dealtMonths, renderDates, refreshCond]);
 
   return (
     <div className={styles.container}>
@@ -516,7 +522,9 @@ export default function SliderDatePicker(props: SliderDatePickerProps) {
             </div>
           </div>
         </div>
-        <div className={styles.rightSide}>{rightSideContent}</div>
+        <div className={styles.rightSide}>
+          {rightSideContent(setRefreshCond)}
+        </div>
       </div>
       <Spin spinning={loading}>
         <div className={styles.slider}>
