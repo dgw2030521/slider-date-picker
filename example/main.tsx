@@ -67,7 +67,7 @@ root.render(
             resolve(
               Array.from({ length: days.length }, (_, index) => {
                 const random = getRandomNumber(1, 100);
-                return refreshCond?.cond || 0;
+                return random;
               }),
             );
           }, 1000);
