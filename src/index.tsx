@@ -31,7 +31,7 @@ interface SliderDatePickerProps {
     isCurrent: boolean,
     preCallbackOnClick: (date: moment.Moment) => void,
   ) => React.ReactNode | React.ReactElement;
-
+  handleDayClick: (currentDate: moment.Moment) => Promise<void>;
   getPolicyCountByDates: (
     dates: string[],
     refreshCond: {},
@@ -54,6 +54,7 @@ export default function SliderDatePicker(props: SliderDatePickerProps) {
     rightSideContent,
     renderDayNode,
     getPolicyCountByDates,
+    handleDayClick,
   } = props;
 
   const cardRefs = useRef({});
@@ -192,7 +193,7 @@ export default function SliderDatePicker(props: SliderDatePickerProps) {
   /**
    * 回到今天
    */
-  const handleClickToday = () => {
+  const handleClickToday = async () => {
     const nowDate = moment();
     // 今天的dom不存在需要创建
     const nowDateStr = nowDate.format('YYYY-MM-DD');
@@ -250,6 +251,8 @@ export default function SliderDatePicker(props: SliderDatePickerProps) {
     setMonthPickerData(_monthData);
     // 仅是为了渲染颜色
     setCurrentDate(nowDate);
+
+    await handleDayClick(nowDate);
   };
 
   /**

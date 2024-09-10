@@ -15,9 +15,15 @@ function getRandomNumber(min: number, max: number) {
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
+const handleDayClick = async (currentMDate: moment.Moment) => {
+  // 业务逻辑
+  console.log(currentMDate.format('YYYY-MM-DD'));
+};
+
 root.render(
   <div style={{ width: 1300 }}>
     <SliderDatePicker
+      handleDayClick={handleDayClick}
       leftSideContent={<span className={styles.headTitle}>政策日历</span>}
       rightSideContent={setRefreshCond => {
         return (
@@ -51,8 +57,7 @@ root.render(
             onClick={() => {
               const currentMDate = moment(dateObj.date);
               preCallbackOnClick(currentMDate);
-              // 业务逻辑
-              console.log(currentMDate.format('YYYY-MM-DD'));
+              handleDayClick(currentMDate);
             }}
           >
             <span className={styles.day}>{dayStr}日</span>
