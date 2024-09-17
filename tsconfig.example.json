@@ -1,4 +1,7 @@
 {
+  "compilerOptions": {
+    "rootDir": "example"
+  },
   "extends": ["./tsconfig.lib.json"],
-  "include": ["example","./example/globals.d.ts"]
+  "include": ["./example", "./example/globals.d.ts"]
 }
