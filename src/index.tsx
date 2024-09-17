@@ -4,10 +4,15 @@
 import { Spin } from 'antd';
 import classNames from 'classnames';
 import update from 'immutability-helper';
-import { each, filter, findIndex, isEmpty, map } from 'lodash-es';
+import { each, findIndex, map } from 'lodash-es';
 import moment from 'moment';
-import type React from 'react';
-import { useEffect, useRef, useState } from 'react';
+import React, {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react';
 
 import styles from './index.module.scss';
 import type { RenderDaysType } from './utils';
@@ -18,8 +23,15 @@ import {
   getMonthRenderDaysObj,
 } from './utils';
 
+export interface RefProps {
+  currentDate: moment.Moment;
+  handleGetPolicyCount: Function;
+  recordMonths: string[];
+  setExtraCond: Function;
+}
+
 interface SliderDatePickerProps {
-  dateValue: string;
+  dateValue?: string;
   /**
    * 渲染日期节点
    * @param dateObj 日期节点数据
@@ -31,15 +43,14 @@ interface SliderDatePickerProps {
     isCurrent: boolean,
     preCallbackOnClick: (date: moment.Moment) => void,
   ) => React.ReactNode | React.ReactElement;
+  // 暴露出来主要是给回到今日调用
   handleDayClick: (currentDate: moment.Moment) => Promise<void>;
   getPolicyCountByDates: (
     dates: string[],
-    refreshCond: {},
+    extraCond: { activeTab: number },
   ) => Promise<number[]>;
   leftSideContent?: React.ReactNode | React.ReactElement;
-  rightSideContent?: (
-    setRefreshCond: (refreshCond: any) => void,
-  ) => React.ReactNode | React.ReactElement;
+  rightSideContent?: React.ReactNode | React.ReactElement;
 }
 
 // 一行展示12个
@@ -47,7 +58,10 @@ const SHOW_COUNT = 12;
 // 每次左右移动1天
 const STEP = 1;
 
-export default function SliderDatePicker(props: SliderDatePickerProps) {
+function SliderDatePicker(
+  props: SliderDatePickerProps,
+  ref: React.MutableRefObject<RefProps>,
+) {
   const {
     dateValue,
     leftSideContent,
@@ -63,11 +77,10 @@ export default function SliderDatePicker(props: SliderDatePickerProps) {
   const _currentDate = dateValue ? moment(dateValue) : moment();
 
   const monthsPadding = _currentDate.diff(moment(), 'months');
-  if (Math.abs(monthsPadding) > 12) {
-    return <span>默认日期不能超出当前时间12个月</span>;
-  }
 
   const [currentDate, setCurrentDate] = useState(_currentDate);
+
+  const [extraCond, setExtraCond] = useState({});
 
   const _monthData = getMonthData(currentDate);
   // month picker的数据
@@ -85,7 +98,6 @@ export default function SliderDatePicker(props: SliderDatePickerProps) {
 
   const [loading, setLoading] = useState(false);
   const [dealtMonths, setDealtMonths] = useState([]);
-  const [refreshCond, setRefreshCond] = useState<any>();
 
   // 头尾日期
   const [firstDate, setFirstDate] = useState(moment(_renderDates[0].date));
@@ -429,7 +441,10 @@ export default function SliderDatePicker(props: SliderDatePickerProps) {
    * 只请求未处理过的月份
    * @param months
    */
-  const handleGetPolicyCount = async (months: string[], refreshCond) => {
+  const handleGetPolicyCount = async (months: string[], $extraCond) => {
+    months = months || recordMonths;
+    $extraCond = $extraCond || extraCond;
+    setLoading(true);
     let allDays = [];
     for (let i = 0; i < months.length; i++) {
       const cDateArr = months[i].split('-');
@@ -440,48 +455,53 @@ export default function SliderDatePicker(props: SliderDatePickerProps) {
       allDays = [...allDays, ...cDays];
     }
 
-    const result = await getPolicyCountByDates(allDays, refreshCond);
-    return {
+    const result = await getPolicyCountByDates(allDays, $extraCond);
+    const resp = {
       params: allDays,
       result,
     };
+
+    setLoading(false);
+    // setDealtMonths(recordMonths);
+    let optionsStr = {};
+    each(resp.params, (day, idx) => {
+      const $index = findIndex(renderDates, item => {
+        return item.date === day;
+      });
+      const $count = resp.result[idx];
+      const $option = {
+        [$index]: {
+          option: {
+            policyCount: {
+              $set: $count,
+            },
+          },
+        },
+      };
+      optionsStr = { ...$option, ...optionsStr };
+    });
+    const newRenderDates = update(renderDates, {
+      ...optionsStr,
+    });
+    setRenderDates(newRenderDates);
   };
 
   useEffect(() => {
-    console.log('@###最新的渲染日期', renderDates, recordMonths, refreshCond);
-    const restMonths = filter(recordMonths, item => {
-      return !dealtMonths.includes(item);
-    });
+    handleGetPolicyCount(recordMonths, extraCond);
+  }, [recordMonths, extraCond]);
 
-    if (!isEmpty(restMonths) || !isEmpty(refreshCond)) {
-      setLoading(true);
-      handleGetPolicyCount(restMonths, refreshCond).then(resp => {
-        setLoading(false);
-        // setDealtMonths(recordMonths);
-        let optionsStr = {};
-        each(resp.params, (day, idx) => {
-          const $index = findIndex(renderDates, item => {
-            return item.date === day;
-          });
-          const $count = resp.result[idx];
-          const $option = {
-            [$index]: {
-              option: {
-                policyCount: {
-                  $set: $count,
-                },
-              },
-            },
-          };
-          optionsStr = { ...$option, ...optionsStr };
-        });
-        const newRenderDates = update(renderDates, {
-          ...optionsStr,
-        });
-        setRenderDates(newRenderDates);
-      });
-    }
-  }, [recordMonths, dealtMonths, renderDates, refreshCond]);
+  useImperativeHandle(ref, () => {
+    return {
+      currentDate,
+      handleGetPolicyCount,
+      recordMonths,
+      setExtraCond,
+    };
+  });
+
+  if (Math.abs(monthsPadding) > 12) {
+    return <span>默认日期不能超出当前时间12个月</span>;
+  }
 
   return (
     <div className={styles.container}>
@@ -525,9 +545,7 @@ export default function SliderDatePicker(props: SliderDatePickerProps) {
             </div>
           </div>
         </div>
-        <div className={styles.rightSide}>
-          {rightSideContent(setRefreshCond)}
-        </div>
+        <div className={styles.rightSide}>{rightSideContent}</div>
       </div>
       <Spin spinning={loading}>
         <div className={styles.slider}>
@@ -560,3 +578,5 @@ export default function SliderDatePicker(props: SliderDatePickerProps) {
     </div>
   );
 }
+
+export default forwardRef(SliderDatePicker);
