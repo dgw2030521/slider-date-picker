@@ -1,5 +1,6 @@
 /**
  * 每个日期需要查询的信息，按月份查找
+ * @Notice 已知问题，计算政策数量，异步请求切换月份过快，导致响应跟不上切换显示出现异常
  */
 import { Spin } from 'antd';
 import classNames from 'classnames';
@@ -10,6 +11,7 @@ import React, {
   forwardRef,
   useEffect,
   useImperativeHandle,
+  useLayoutEffect,
   useRef,
   useState,
 } from 'react';
@@ -440,6 +442,7 @@ function SliderDatePicker(
   /**
    * 只请求未处理过的月份
    * @param months
+   * @param $extraCond
    */
   const handleGetPolicyCount = async (months: string[], $extraCond) => {
     months = months || recordMonths;
@@ -468,6 +471,10 @@ function SliderDatePicker(
       const $index = findIndex(renderDates, item => {
         return item.date === day;
       });
+      if ($index === -1) {
+        console.log('####$index', $index, resp.params, day, renderDates);
+      }
+
       const $count = resp.result[idx];
       const $option = {
         [$index]: {
@@ -486,7 +493,7 @@ function SliderDatePicker(
     setRenderDates(newRenderDates);
   };
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     handleGetPolicyCount(recordMonths, extraCond);
   }, [recordMonths, extraCond]);
 
@@ -555,7 +562,9 @@ function SliderDatePicker(
               [styles.left]: true,
             })}
             onClick={() => {
-              handleSliderChange(firstDate, -STEP);
+              if (!loading) {
+                handleSliderChange(firstDate, -STEP);
+              }
             }}
           />
           <div
@@ -570,7 +579,9 @@ function SliderDatePicker(
               [styles.right]: true,
             })}
             onClick={() => {
-              handleSliderChange(lastDate, STEP);
+              if (!loading) {
+                handleSliderChange(lastDate, STEP);
+              }
             }}
           />
         </div>

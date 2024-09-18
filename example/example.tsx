@@ -61,7 +61,7 @@ export default function Example() {
           );
         }}
         getPolicyCountByDates={async (days, refreshCond) => {
-          console.log('refreshCond', refreshCond);
+          console.log('refreshCond===', days, refreshCond);
           return new Promise(function (resolve) {
             setTimeout(() => {
               resolve(
