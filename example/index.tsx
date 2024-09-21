@@ -14,7 +14,7 @@ export default function Example() {
   const datePickerRef = useRef<RefProps>(null);
 
   const handleDayClick = async (currentMDate: moment.Moment) => {
-    // 业务逻辑
+    // @todo 业务逻辑
     console.log(currentMDate.format('YYYY-MM-DD'));
   };
 
@@ -60,15 +60,14 @@ export default function Example() {
             </div>
           );
         }}
-        getPolicyCountByDates={async (days, refreshCond) => {
-          console.log('refreshCond===', days, refreshCond);
+        getPolicyCountByDates={async (days, $extraCond) => {
+          console.log('$extraCond===', days, $extraCond);
           return new Promise(function (resolve) {
             setTimeout(() => {
               resolve(
-                Array.from({ length: days.length }, (_, index) => {
+                Array.from({ length: days.length }, () => {
                   const random = getRandomNumber(1, 100);
-                  // @ts-ignore
-                  return refreshCond?.cond || 0;
+                  return random;
                 }),
               );
             }, 1000);
