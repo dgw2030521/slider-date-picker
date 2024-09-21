@@ -9,7 +9,6 @@ import { each, findIndex, map } from 'lodash-es';
 import moment from 'moment';
 import React, {
   forwardRef,
-  useEffect,
   useImperativeHandle,
   useLayoutEffect,
   useRef,
@@ -435,7 +434,7 @@ function SliderDatePicker(
   };
 
   // 宽度只计算一次
-  useEffect(() => {
+  useLayoutEffect(() => {
     const currentDateStr = currentDate?.format('YYYY-MM-DD');
     const currentMatchedCardDom = cardRefs.current[currentDateStr];
     const width = currentMatchedCardDom.getBoundingClientRect().width;
