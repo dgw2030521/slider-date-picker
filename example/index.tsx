@@ -32,12 +32,14 @@ export default function Example() {
                   '###datePickerRef',
                   datePickerRef.current.currentDate.format('YYYY-MM-DD'),
                 );
+                alert(datePickerRef.current.currentDate.format('YYYY-MM-DD'));
               }}
             >
               调用datePickerRef
             </Button>
           </div>
         }
+        showCount={10}
         dateValue="2024-07-02"
         renderDayNode={(dateObj, isCurrent, preCallbackOnClick) => {
           const dayStr = Number.parseInt(dateObj.date.split('-')[2], 10);

@@ -33,6 +33,7 @@ export interface RefProps {
 }
 
 interface SliderDatePickerProps {
+  showCount?: number;
   dateValue?: string;
   /**
    * 渲染日期节点
@@ -73,6 +74,8 @@ function SliderDatePicker(
     handleDayClick,
   } = props;
 
+  const showCount = props.showCount || SHOW_COUNT;
+
   const cardRefs = useRef({});
   const cardBoxRef = useRef(null);
   // 指定的当前日期
@@ -106,7 +109,7 @@ function SliderDatePicker(
   const [lastDate, setLastDate] = useState(
     moment(_renderDates[0].date)
       .clone()
-      .add(SHOW_COUNT - 1, 'd'),
+      .add(showCount - 1, 'd'),
   );
   // card宽度
   const [cardWidth, setCardWidth] = useState(null);
@@ -238,13 +241,13 @@ function SliderDatePicker(
           const startDate = moment(genRenderDates[0]);
           moveDateCard(nowDate, startDate, cardWidth, offset);
           setFirstDate(nowDate);
-          setLastDate(nowDate.clone().add(SHOW_COUNT - 1, 'd'));
+          setLastDate(nowDate.clone().add(showCount - 1, 'd'));
           console.log(
             '@###handleClickToday 新的开始结束',
             nowDate.format('YYYY-MM-DD'),
             nowDate
               .clone()
-              .add(SHOW_COUNT - 1, 'd')
+              .add(showCount - 1, 'd')
               .format('YYYY-MM-DD'),
           );
         });
@@ -279,18 +282,18 @@ function SliderDatePicker(
     step: number,
   ) => {
     const nextRenderDates = getMonthRenderDaysObj(monthData);
-    let _newRenderDates = null;
+    let $newRenderDates = null;
     // 后加
     if (step > 0) {
-      _newRenderDates = update(renderDates, {
+      $newRenderDates = update(renderDates, {
         $splice: [[renderDates.length, 0, ...nextRenderDates]],
       });
     } else {
-      _newRenderDates = update(renderDates, {
+      $newRenderDates = update(renderDates, {
         $splice: [[0, 0, ...nextRenderDates]],
       });
     }
-    return _newRenderDates;
+    return $newRenderDates;
   };
 
   /**
@@ -411,8 +414,8 @@ function SliderDatePicker(
             [styles.endOfMonth]: dateStr === endOfMonthStr,
           })}
           style={{
-            width: `${100 / SHOW_COUNT}%`,
-            flexBasis: `${100 / SHOW_COUNT}%`,
+            width: `${100 / showCount}%`,
+            flexBasis: `${100 / showCount}%`,
           }}
           key={dateStr}
           ref={el => {
