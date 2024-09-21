@@ -27,7 +27,6 @@ import {
 
 export interface RefProps {
   currentDate: moment.Moment;
-  handleGetPolicyCount: Function;
   recordMonths: string[];
   setExtraCond: Function;
 }
@@ -234,6 +233,11 @@ function SliderDatePicker(
           const diff = moveDateCard(nowDate, firstDate, cardWidth);
           setFirstDate(nowDate);
           setLastDate(lastDate.clone().add(diff, 'd'));
+          console.log(
+            '@###handleClickToday 新的开始结束',
+            nowDate.format('YYYY-MM-DD'),
+            lastDate.clone().add(diff, 'd').format('YYYY-MM-DD'),
+          );
         });
       } else {
         // 往前
@@ -503,7 +507,6 @@ function SliderDatePicker(
   useImperativeHandle(ref, () => {
     return {
       currentDate,
-      handleGetPolicyCount,
       recordMonths,
       setExtraCond,
     };

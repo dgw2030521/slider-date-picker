@@ -50,6 +50,7 @@ export default function Example() {
                 [styles.current]: isCurrent,
               })}
               onClick={() => {
+                console.log('-----dateObj', dateObj);
                 const currentMDate = moment(dateObj.date);
                 preCallbackOnClick(currentMDate);
                 handleDayClick(currentMDate);
