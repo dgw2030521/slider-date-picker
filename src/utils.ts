@@ -22,6 +22,17 @@ const getMonthRenderDays = (monthData: [number, number]) => {
   });
 };
 
+/**
+ * 获得两个日期之间所有的日期字符串，包括开始结束两个日期
+ * @param firstDate
+ * @param showCount
+ */
+const getRoundDays = (firstDate: moment.Moment, showCount: number) => {
+  return Array.from({ length: showCount }, (_, index) => {
+    return firstDate.clone().add(index, 'day').format('YYYY-MM-DD');
+  });
+};
+
 type RenderDaysType = {
   date: string;
   option: {
@@ -84,9 +95,10 @@ const getMonthPaddingTwoDate = (
 
 export {
   getMonthData,
+  getMonthPaddingTwoDate,
   getMonthRenderDays,
   getMonthRenderDaysObj,
-  getMonthPaddingTwoDate,
+  getRoundDays,
 };
 
 export type { RenderDaysType };

@@ -40,7 +40,7 @@ export default function Example() {
           </div>
         }
         showCount={10}
-        dateValue="2024-07-02"
+        dateValue="2024-07-20"
         renderDayNode={(dateObj, isCurrent, preCallbackOnClick) => {
           const dayStr = Number.parseInt(dateObj.date.split('-')[2], 10);
           return (
@@ -64,7 +64,7 @@ export default function Example() {
           );
         }}
         getPolicyCountByDates={async (days, $extraCond) => {
-          console.log('$extraCond===', days, $extraCond);
+          console.log('====getPolicyCountByDates===', days, $extraCond);
           return new Promise(function (resolve) {
             setTimeout(() => {
               resolve(

@@ -16,12 +16,12 @@ import React, {
 } from 'react';
 
 import styles from './index.module.scss';
-import type { RenderDaysType } from './utils';
 import {
   getMonthData,
   getMonthPaddingTwoDate,
-  getMonthRenderDays,
   getMonthRenderDaysObj,
+  getRoundDays,
+  RenderDaysType,
 } from './utils';
 
 export interface RefProps {
@@ -83,7 +83,7 @@ function SliderDatePicker(
 
   const [currentDate, setCurrentDate] = useState(_currentDate);
 
-  const [extraCond, setExtraCond] = useState({});
+  const [extraCond, setExtraCond] = useState<{ activeTab: number }>();
 
   const _monthData = getMonthData(currentDate);
   // month picker的数据
@@ -118,12 +118,18 @@ function SliderDatePicker(
    * @param toDate
    * @param width
    * @param offset 偏移量，新生的dom，可能原先容器存在scrollLeft
+   * @param extraParam
    */
-  const moveDateCard = (
+  const moveDateCard = async (
     formDate: moment.Moment,
     toDate: moment.Moment,
     width: number,
-    offset?: number,
+    offset: number,
+    extraParam: {
+      firstData: moment.Moment;
+      showCount: number;
+      newRenderDates: RenderDaysType[];
+    },
   ) => {
     offset = offset || 0;
     // 对象内部会干扰原数据对象，重新设置对象
@@ -134,24 +140,32 @@ function SliderDatePicker(
     const diff = mFrom.diff(mTo, 'days');
     console.log('---moveDateCard:::', mFromStr, mToStr, diff, offset);
     cardBoxRef.current.scrollLeft += width * (diff - offset);
+
+    const countDays = getRoundDays(extraParam.firstData, extraParam.showCount);
+    await handleGetPolicyCount(countDays, extraParam.newRenderDates);
+
     return diff;
   };
 
   /**
-   * 传入两个月数据，获取没渲染数据月份数据
+   * 传入两个月数据，获取没渲染数据月份数据。
+   *
    */
   const getMonthRenderDatesList = (
-    cDate: moment.Moment,
+    curDate: moment.Moment,
     nowDate: moment.Moment,
   ) => {
     const monthDataList = [];
     let _newRenderDates = [];
     const _newRecordMonths = [];
-    const paddingCurrentToNow = getMonthPaddingTwoDate(nowDate, cDate);
+    const paddingCurrentToNow = getMonthPaddingTwoDate(nowDate, curDate);
 
+    console.log('???paddingCurrentToNow', paddingCurrentToNow);
+
+    // 从后往前移
     if (paddingCurrentToNow > 0) {
-      for (let i = 1; i <= paddingCurrentToNow + 1; i++) {
-        const monthData = getMonthData(cDate.clone().subtract(i, 'M'));
+      for (let i = 1; i <= paddingCurrentToNow; i++) {
+        const monthData = getMonthData(curDate.clone().subtract(i, 'M'));
         monthDataList.push(monthData);
       }
 
@@ -174,8 +188,9 @@ function SliderDatePicker(
         $splice: [[0, 0, ...renderDatesArr]],
       });
     } else {
-      for (let i = 1; i <= -paddingCurrentToNow; i++) {
-        const monthData = getMonthData(cDate.clone().add(i, 'M'));
+      // 从前往后移，为了安全，多获取后一个月的数据，+1
+      for (let i = 1; i <= -paddingCurrentToNow + 1; i++) {
+        const monthData = getMonthData(curDate.clone().add(i, 'M'));
         monthDataList.push(monthData);
       }
 
@@ -206,7 +221,8 @@ function SliderDatePicker(
   };
 
   /**
-   * 回到今天
+   * 回到今日逻辑
+   * 如果当前日期到这个月的结束日期小于SHOW_COUNT，那么今日不会在最开始位置，因为一次只获取了一个月的
    */
   const handleClickToday = async () => {
     const nowDate = moment();
@@ -218,18 +234,28 @@ function SliderDatePicker(
       const currentMonthStateDate = currentDate.clone().startOf('month');
       const offset = currentDate.clone().diff(currentMonthStateDate, 'days');
 
-      const {
-        newRenderDates: genRenderDates,
-        newRecordMonths: genRecordMonths,
-      } = getMonthRenderDatesList(currentDate, nowDate);
+      const { newRenderDates, newRecordMonths } = getMonthRenderDatesList(
+        currentDate,
+        nowDate,
+      );
 
-      setRenderDates(genRenderDates);
-      setRecordMonths(genRecordMonths);
+      console.log(
+        '>>>>>>>newRenderDates, newRecordMonths',
+        newRenderDates,
+        newRecordMonths,
+      );
+
+      setRecordMonths(newRecordMonths);
+      setRenderDates(newRenderDates);
 
       //   往后
       if (firstDate.isBefore(nowDate)) {
-        setTimeout(() => {
-          const diff = moveDateCard(nowDate, firstDate, cardWidth);
+        setTimeout(async () => {
+          const diff = await moveDateCard(nowDate, firstDate, cardWidth, 0, {
+            firstData: nowDate,
+            showCount,
+            newRenderDates,
+          });
           setFirstDate(nowDate);
           setLastDate(lastDate.clone().add(diff, 'd'));
           console.log(
@@ -240,9 +266,13 @@ function SliderDatePicker(
         });
       } else {
         // 往前
-        setTimeout(() => {
-          const startDate = moment(genRenderDates[0]);
-          moveDateCard(nowDate, startDate, cardWidth, offset);
+        setTimeout(async () => {
+          const startDate = moment(newRenderDates[0].date);
+          await moveDateCard(nowDate, startDate, cardWidth, offset, {
+            firstData: nowDate,
+            showCount,
+            newRenderDates,
+          });
           setFirstDate(nowDate);
           setLastDate(nowDate.clone().add(showCount - 1, 'd'));
           console.log(
@@ -256,7 +286,11 @@ function SliderDatePicker(
         });
       }
     } else {
-      const diff = moveDateCard(nowDate, firstDate, cardWidth);
+      const diff = await moveDateCard(nowDate, firstDate, cardWidth, 0, {
+        firstData: nowDate,
+        showCount,
+        newRenderDates: renderDates,
+      });
       setFirstDate(nowDate);
       setLastDate(lastDate.clone().add(diff, 'd'));
       console.log(
@@ -304,7 +338,7 @@ function SliderDatePicker(
    * @param mData
    * @param step
    */
-  const handleChangeMonth = (mData: [number, number], step: number) => {
+  const handleChangeMonth = async (mData: [number, number], step: number) => {
     // @ts-ignore
     const nextDate = moment(mData).add(step, 'M');
     const nextMonthData = getMonthData(nextDate);
@@ -318,27 +352,33 @@ function SliderDatePicker(
       setRecordMonths(newRecordMonths);
       const _newRenderDates = genNewMonthRenderDates(nextMonthData, step);
       setRenderDates(_newRenderDates);
+
+      //   延迟一步，更新滚动条
+      setTimeout(async () => {
+        //  之前dom已存在,不会发生scrollWidth变化,直接进行定位
+        const newFirstDate = moment([nextMonthData[0], nextMonthData[1], 1]);
+        const diff = await moveDateCard(newFirstDate, firstDate, cardWidth, 0, {
+          firstData: newFirstDate,
+          showCount,
+          newRenderDates: _newRenderDates,
+        });
+        setFirstDate(newFirstDate);
+        const newLastDate = lastDate.clone().add(diff, 'd');
+        setLastDate(newLastDate);
+        console.log(
+          '@###handleChangeMonth 新的开始结束',
+          diff,
+          newFirstDate.format('YYYY-MM-DD'),
+          newLastDate.format('YYYY-MM-DD'),
+        );
+      });
     }
-    //   延迟一步，更新滚动条
-    setTimeout(() => {
-      //  之前dom已存在,不会发生scrollWidth变化,直接进行定位
-      const newFirstDate = moment([nextMonthData[0], nextMonthData[1], 1]);
-      const diff = moveDateCard(newFirstDate, firstDate, cardWidth);
-      setFirstDate(newFirstDate);
-      const newLastDate = lastDate.clone().add(diff, 'd');
-      setLastDate(newLastDate);
-      console.log(
-        '@###handleChangeMonth 新的开始结束',
-        newFirstDate.format('YYYY-MM-DD'),
-        newLastDate.format('YYYY-MM-DD'),
-      );
-    });
   };
 
   /**
    * slider的上一步和下一步
    */
-  const handleSliderChange = (dDate: moment.Moment, step: number) => {
+  const handleSliderChange = async (dDate: moment.Moment, step: number) => {
     const newFirstDate = firstDate.clone().add(step, 'd');
     const newLastDate = lastDate.clone().add(step, 'd');
 
@@ -359,26 +399,34 @@ function SliderDatePicker(
       setRenderDates(_newRenderDates);
 
       if (step > 0) {
+        // 往右移动
         setTimeout(() => {
-          //   计算移动
-          moveDateCard(nextDate, dDate, cardWidth);
+          moveDateCard(nextDate, dDate, cardWidth, 0, {
+            firstData: newLastDate,
+            showCount: 1,
+            newRenderDates: _newRenderDates,
+          });
           setFirstDate(newFirstDate);
           setLastDate(newLastDate);
           console.log(
-            '@@@handleSliderChange 新的开始结束',
+            '@@@handleSliderChange no dom新的开始结束',
             newFirstDate.format('YYYY-MM-DD'),
             newLastDate.format('YYYY-MM-DD'),
           );
         }, 0);
       } else {
-        // 往前移动
+        // 往左移动
         setTimeout(() => {
           const startDate = nextDate.clone().startOf('month');
-          moveDateCard(nextDate, startDate, cardWidth);
+          moveDateCard(nextDate, startDate, cardWidth, 0, {
+            firstData: newFirstDate,
+            showCount: 1,
+            newRenderDates: _newRenderDates,
+          });
           setFirstDate(newFirstDate);
           setLastDate(newLastDate);
           console.log(
-            '@@@handleSliderChange 新的开始结束',
+            '@@@handleSliderChange no dom新的开始结束',
             newFirstDate.format('YYYY-MM-DD'),
             newLastDate.format('YYYY-MM-DD'),
           );
@@ -393,6 +441,9 @@ function SliderDatePicker(
         newFirstDate.format('YYYY-MM-DD'),
         newLastDate.format('YYYY-MM-DD'),
       );
+      // 此处不知前后，为方便，故计算showCount个
+      const countDays = getRoundDays(newFirstDate, showCount);
+      await handleGetPolicyCount(countDays, renderDates);
     }
   };
 
@@ -440,67 +491,120 @@ function SliderDatePicker(
     const width = currentMatchedCardDom.getBoundingClientRect().width;
     setCardWidth(width);
 
-    const diff = moveDateCard(currentDate, firstDate, width);
-    setFirstDate(currentDate);
-    setLastDate(lastDate.clone().add(diff, 'd'));
+    moveDateCard(currentDate, firstDate, width, 0, {
+      firstData: currentDate,
+      showCount,
+      newRenderDates: renderDates,
+    }).then(diff => {
+      setFirstDate(currentDate);
+      setLastDate(lastDate.clone().add(diff, 'd'));
+    });
   }, []);
+
+  /**
+   * @param days
+   * @param renderDates
+   * @param $extraCond
+   */
+  const handleGetPolicyCount = async (
+    days: string[],
+    renderDates: RenderDaysType[],
+    $extraCond?: { activeTab: number },
+  ) => {
+    $extraCond = $extraCond || extraCond;
+    setLoading(true);
+    try {
+      const result = await getPolicyCountByDates(days, $extraCond);
+      const resp = {
+        params: days,
+        result,
+      };
+
+      console.log('----renderDates', renderDates);
+      console.log('----resp', resp);
+
+      let optionsStr = {};
+      each(resp.params, (day, idx) => {
+        const $index = findIndex(renderDates, item => {
+          return item.date === day;
+        });
+
+        const $count = resp.result[idx];
+        const $option = {
+          [$index]: {
+            option: {
+              policyCount: {
+                $set: $count,
+              },
+            },
+          },
+        };
+        optionsStr = { ...$option, ...optionsStr };
+      });
+      const newRenderDates = update(renderDates, {
+        ...optionsStr,
+      });
+      setRenderDates(newRenderDates);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   /**
    * 只请求未处理过的月份
    * @param months
    * @param $extraCond
    */
-  const handleGetPolicyCount = async (months: string[], $extraCond) => {
-    months = months || recordMonths;
-    $extraCond = $extraCond || extraCond;
-    setLoading(true);
-    let allDays = [];
-    for (let i = 0; i < months.length; i++) {
-      const cDateArr = months[i].split('-');
-      const cYear = Number.parseInt(cDateArr[0], 10);
-      const cMonth = Number.parseInt(cDateArr[1], 10) - 1;
-
-      const cDays = getMonthRenderDays([cYear, cMonth]);
-      allDays = [...allDays, ...cDays];
-    }
-
-    const result = await getPolicyCountByDates(allDays, $extraCond);
-    const resp = {
-      params: allDays,
-      result,
-    };
-
-    setLoading(false);
-    // setDealtMonths(recordMonths);
-    let optionsStr = {};
-    each(resp.params, (day, idx) => {
-      const $index = findIndex(renderDates, item => {
-        return item.date === day;
-      });
-      if ($index === -1) {
-        console.log('####$index', $index, resp.params, day, renderDates);
-      }
-
-      const $count = resp.result[idx];
-      const $option = {
-        [$index]: {
-          option: {
-            policyCount: {
-              $set: $count,
-            },
-          },
-        },
-      };
-      optionsStr = { ...$option, ...optionsStr };
-    });
-    const newRenderDates = update(renderDates, {
-      ...optionsStr,
-    });
-    setRenderDates(newRenderDates);
-  };
+  // const handleGetPolicyCount = async (months: string[], $extraCond) => {
+  //   months = months || recordMonths;
+  //   $extraCond = $extraCond || extraCond;
+  //   setLoading(true);
+  //   let allDays = [];
+  //   for (let i = 0; i < months.length; i++) {
+  //     const cDateArr = months[i].split('-');
+  //     const cYear = Number.parseInt(cDateArr[0], 10);
+  //     const cMonth = Number.parseInt(cDateArr[1], 10) - 1;
+  //
+  //     const cDays = getMonthRenderDays([cYear, cMonth]);
+  //     allDays = [...allDays, ...cDays];
+  //   }
+  //
+  //   const result = await getPolicyCountByDates(allDays, $extraCond);
+  //   const resp = {
+  //     params: allDays,
+  //     result,
+  //   };
+  //
+  //   setLoading(false);
+  //   // setDealtMonths(recordMonths);
+  //   let optionsStr = {};
+  //   each(resp.params, (day, idx) => {
+  //     const $index = findIndex(renderDates, item => {
+  //       return item.date === day;
+  //     });
+  //
+  //     const $count = resp.result[idx];
+  //     const $option = {
+  //       [$index]: {
+  //         option: {
+  //           policyCount: {
+  //             $set: $count,
+  //           },
+  //         },
+  //       },
+  //     };
+  //     optionsStr = { ...$option, ...optionsStr };
+  //   });
+  //   const newRenderDates = update(renderDates, {
+  //     ...optionsStr,
+  //   });
+  //   setRenderDates(newRenderDates);
+  // };
 
   useLayoutEffect(() => {
-    handleGetPolicyCount(recordMonths, extraCond);
+    // handleGetPolicyCount(recordMonths, extraCond);
   }, [recordMonths, extraCond]);
 
   useImperativeHandle(ref, () => {
