@@ -40,7 +40,7 @@ export default function Example() {
           </div>
         }
         showCount={10}
-        dateValue="2024-07-25"
+        // dateValue="2024-11-25"
         renderDayNode={(dateObj, isCurrent, preCallbackOnClick) => {
           const dayStr = Number.parseInt(dateObj.date.split('-')[2], 10);
           return (
