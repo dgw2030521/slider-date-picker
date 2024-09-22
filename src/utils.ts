@@ -40,20 +40,34 @@ type RenderDaysType = {
     [index: string]: any;
   };
 };
+
 /**
  * 获取渲染的日期树， [年，月]
- * @param monthData
+ * @param currentMonthData
+ * @param nextMonthData
  */
 const getMonthRenderDaysObj = (
-  monthData: [number, number],
+  currentMonthData: [number, number],
+  nextMonthData?: [number, number],
 ): RenderDaysType[] => {
-  const monthDays = moment(monthData).daysInMonth();
-  return Array.from({ length: monthDays }, (_, index) => {
+  const monthDays = moment(currentMonthData).daysInMonth();
+  const currentDates = Array.from({ length: monthDays }, (_, index) => {
     return {
-      date: moment([...monthData, index + 1]).format('YYYY-MM-DD'),
+      date: moment([...currentMonthData, index + 1]).format('YYYY-MM-DD'),
       option: {},
     };
   });
+  let nextDates = [];
+  if (nextMonthData) {
+    const nextMonthDays = moment(nextMonthData).daysInMonth();
+    nextDates = Array.from({ length: nextMonthDays }, (_, index) => {
+      return {
+        date: moment([...nextMonthData, index + 1]).format('YYYY-MM-DD'),
+        option: {},
+      };
+    });
+  }
+  return [...currentDates, ...nextDates];
 };
 
 /**

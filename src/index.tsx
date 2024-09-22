@@ -85,23 +85,35 @@ function SliderDatePicker(
 
   const [extraCond, setExtraCond] = useState<{ activeTab: number }>();
 
-  const _monthData = getMonthData(currentDate);
+  const currentMonthData = getMonthData(currentDate);
   // month picker的数据
   const [monthPickerData, setMonthPickerData] =
-    useState<[number, number]>(_monthData);
+    useState<[number, number]>(currentMonthData);
 
-  const _renderDates = getMonthRenderDaysObj(_monthData);
+  const endDate = _currentDate.clone().add(showCount - 1, 'd');
+  const endMonthData = getMonthData(endDate);
+  let _renderDates;
+  let _recordMonths;
+  if (endMonthData[1] > currentMonthData[1]) {
+    _renderDates = getMonthRenderDaysObj(currentMonthData, endMonthData);
+    _recordMonths = [
+      `${currentMonthData[0]}-${currentMonthData[1] + 1}`,
+      `${endMonthData[0]}-${endMonthData[1] + 1}`,
+    ];
+  } else {
+    _renderDates = getMonthRenderDaysObj(currentMonthData);
+    _recordMonths = [`${currentMonthData[0]}-${currentMonthData[1] + 1}`];
+  }
+
   // 所有用来渲染的日期
   const [renderDates, setRenderDates] =
     useState<RenderDaysType[]>(_renderDates);
   // 记录被渲染的月份
-  const [recordMonths, setRecordMonths] = useState([
-    `${_monthData[0]}-${_monthData[1] + 1}`,
-  ]);
+  const [recordMonths, setRecordMonths] = useState(_recordMonths);
 
   const [loading, setLoading] = useState(false);
 
-  // 头尾日期
+  // 初始头尾日期，计算好之后都需要移动
   const [firstDate, setFirstDate] = useState(moment(_renderDates[0].date));
   const [lastDate, setLastDate] = useState(
     moment(_renderDates[0].date)
@@ -551,18 +563,19 @@ function SliderDatePicker(
         const $index = findIndex(renderDates, item => {
           return item.date === day;
         });
-
-        const $count = resp.result[idx];
-        const $option = {
-          [$index]: {
-            option: {
-              policyCount: {
-                $set: $count,
+        if ($index > -1) {
+          const $count = resp.result[idx];
+          const $option = {
+            [$index]: {
+              option: {
+                policyCount: {
+                  $set: $count,
+                },
               },
             },
-          },
-        };
-        optionsStr = { ...$option, ...optionsStr };
+          };
+          optionsStr = { ...$option, ...optionsStr };
+        }
       });
       const newRenderDates = update(renderDates, {
         ...optionsStr,
