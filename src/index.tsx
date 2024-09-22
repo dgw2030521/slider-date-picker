@@ -345,6 +345,12 @@ function SliderDatePicker(
     setMonthPickerData(nextMonthData);
     // 拼成记录月份
     const nextMonthStr = `${nextMonthData[0]}-${nextMonthData[1] + 1}`;
+    console.log(
+      '???recordMonths.indexOf(nextMonthStr)',
+      recordMonths.indexOf(nextMonthStr),
+    );
+    let $newRenderDates = renderDates;
+    // 加这个判断是为了不创建
     if (recordMonths.indexOf(nextMonthStr) < 0) {
       const newRecordMonths = update(recordMonths, {
         $push: [nextMonthStr],
@@ -352,27 +358,27 @@ function SliderDatePicker(
       setRecordMonths(newRecordMonths);
       const _newRenderDates = genNewMonthRenderDates(nextMonthData, step);
       setRenderDates(_newRenderDates);
-
-      //   延迟一步，更新滚动条
-      setTimeout(async () => {
-        //  之前dom已存在,不会发生scrollWidth变化,直接进行定位
-        const newFirstDate = moment([nextMonthData[0], nextMonthData[1], 1]);
-        const diff = await moveDateCard(newFirstDate, firstDate, cardWidth, 0, {
-          firstData: newFirstDate,
-          showCount,
-          newRenderDates: _newRenderDates,
-        });
-        setFirstDate(newFirstDate);
-        const newLastDate = lastDate.clone().add(diff, 'd');
-        setLastDate(newLastDate);
-        console.log(
-          '@###handleChangeMonth 新的开始结束',
-          diff,
-          newFirstDate.format('YYYY-MM-DD'),
-          newLastDate.format('YYYY-MM-DD'),
-        );
-      });
+      $newRenderDates = _newRenderDates;
     }
+    //   延迟一步，更新滚动条
+    setTimeout(async () => {
+      //  之前dom已存在,不会发生scrollWidth变化,直接进行定位
+      const newFirstDate = moment([nextMonthData[0], nextMonthData[1], 1]);
+      const diff = await moveDateCard(newFirstDate, firstDate, cardWidth, 0, {
+        firstData: newFirstDate,
+        showCount,
+        newRenderDates: $newRenderDates,
+      });
+      setFirstDate(newFirstDate);
+      const newLastDate = lastDate.clone().add(diff, 'd');
+      setLastDate(newLastDate);
+      console.log(
+        '@###handleChangeMonth 新的开始结束',
+        diff,
+        newFirstDate.format('YYYY-MM-DD'),
+        newLastDate.format('YYYY-MM-DD'),
+      );
+    });
   };
 
   /**
