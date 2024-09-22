@@ -64,7 +64,7 @@ export default function Example() {
           );
         }}
         getPolicyCountByDates={async (days, $extraCond) => {
-          console.log('====getPolicyCountByDates===', days, $extraCond);
+          console.log('@@@@getPolicyCountByDates', days, $extraCond);
           return new Promise(function (resolve) {
             setTimeout(() => {
               resolve(

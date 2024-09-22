@@ -5,7 +5,7 @@
 import { Spin } from 'antd';
 import classNames from 'classnames';
 import update from 'immutability-helper';
-import { each, findIndex, map } from 'lodash-es';
+import { each, find, findIndex, map } from 'lodash-es';
 import moment from 'moment';
 import React, {
   forwardRef,
@@ -439,6 +439,7 @@ function SliderDatePicker(
         }, 0);
       }
     } else {
+      // step为负数是向左，正数向右
       cardBoxRef.current.scrollLeft += cardWidth * step;
       setFirstDate(newFirstDate);
       setLastDate(newLastDate);
@@ -447,9 +448,29 @@ function SliderDatePicker(
         newFirstDate.format('YYYY-MM-DD'),
         newLastDate.format('YYYY-MM-DD'),
       );
-      // 此处不知前后，为方便，故计算showCount个
-      const countDays = getRoundDays(newFirstDate, showCount);
-      await handleGetPolicyCount(countDays, renderDates);
+      // 左
+      if (step < 0) {
+        const matched = find(renderDates, item => {
+          return item.date === newFirstDate.format('YYYY-MM-DD');
+        });
+        if (!matched?.option.policyCount) {
+          const countDays = getRoundDays(newFirstDate, 1);
+          await handleGetPolicyCount(countDays, renderDates);
+        }
+      } else {
+        // 右
+        const matched = find(renderDates, item => {
+          return item.date === newLastDate.format('YYYY-MM-DD');
+        });
+        if (!matched?.option.policyCount) {
+          const countDays = getRoundDays(newLastDate, 1);
+          await handleGetPolicyCount(countDays, renderDates);
+        }
+      }
+
+      // // 此处不知前后，为方便，故计算showCount个
+      // const countDays = getRoundDays(newLastDate, showCount);
+      // await handleGetPolicyCount(countDays, renderDates);
     }
   };
 
@@ -526,9 +547,6 @@ function SliderDatePicker(
         result,
       };
 
-      console.log('----renderDates', renderDates);
-      console.log('----resp', resp);
-
       let optionsStr = {};
       each(resp.params, (day, idx) => {
         const $index = findIndex(renderDates, item => {
@@ -557,61 +575,6 @@ function SliderDatePicker(
       setLoading(false);
     }
   };
-
-  /**
-   * 只请求未处理过的月份
-   * @param months
-   * @param $extraCond
-   */
-  // const handleGetPolicyCount = async (months: string[], $extraCond) => {
-  //   months = months || recordMonths;
-  //   $extraCond = $extraCond || extraCond;
-  //   setLoading(true);
-  //   let allDays = [];
-  //   for (let i = 0; i < months.length; i++) {
-  //     const cDateArr = months[i].split('-');
-  //     const cYear = Number.parseInt(cDateArr[0], 10);
-  //     const cMonth = Number.parseInt(cDateArr[1], 10) - 1;
-  //
-  //     const cDays = getMonthRenderDays([cYear, cMonth]);
-  //     allDays = [...allDays, ...cDays];
-  //   }
-  //
-  //   const result = await getPolicyCountByDates(allDays, $extraCond);
-  //   const resp = {
-  //     params: allDays,
-  //     result,
-  //   };
-  //
-  //   setLoading(false);
-  //   // setDealtMonths(recordMonths);
-  //   let optionsStr = {};
-  //   each(resp.params, (day, idx) => {
-  //     const $index = findIndex(renderDates, item => {
-  //       return item.date === day;
-  //     });
-  //
-  //     const $count = resp.result[idx];
-  //     const $option = {
-  //       [$index]: {
-  //         option: {
-  //           policyCount: {
-  //             $set: $count,
-  //           },
-  //         },
-  //       },
-  //     };
-  //     optionsStr = { ...$option, ...optionsStr };
-  //   });
-  //   const newRenderDates = update(renderDates, {
-  //     ...optionsStr,
-  //   });
-  //   setRenderDates(newRenderDates);
-  // };
-
-  useLayoutEffect(() => {
-    // handleGetPolicyCount(recordMonths, extraCond);
-  }, [recordMonths, extraCond]);
 
   useImperativeHandle(ref, () => {
     return {
