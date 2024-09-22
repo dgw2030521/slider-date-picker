@@ -100,7 +100,6 @@ function SliderDatePicker(
   ]);
 
   const [loading, setLoading] = useState(false);
-  const [dealtMonths, setDealtMonths] = useState([]);
 
   // 头尾日期
   const [firstDate, setFirstDate] = useState(moment(_renderDates[0].date));
