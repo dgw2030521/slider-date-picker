@@ -46,23 +46,24 @@ type RenderDaysType = {
  * @param currentMonthData
  * @param nextMonthData
  */
-const getMonthRenderDaysObj = (
-  currentMonthData: [number, number],
-  nextMonthData?: [number, number],
-): RenderDaysType[] => {
-  const monthDays = moment(currentMonthData).daysInMonth();
+const getMonthRenderDaysObj = (currentMonthData: [number, number], nextMonthData?: [number, number]): RenderDaysType[] => {
+  const currentMoment = moment([currentMonthData[0], currentMonthData[1]]);
+  const monthDays = currentMoment.daysInMonth();
   const currentDates = Array.from({ length: monthDays }, (_, index) => {
+    const date = currentMoment.clone().date(index + 1);
     return {
-      date: moment([...currentMonthData, index + 1]).format('YYYY-MM-DD'),
+      date: date.format('YYYY-MM-DD'),
       option: {},
     };
   });
   let nextDates = [];
   if (nextMonthData) {
-    const nextMonthDays = moment(nextMonthData).daysInMonth();
+    const nextMoment = moment([nextMonthData[0], nextMonthData[1]]);
+    const nextMonthDays = nextMoment.daysInMonth();
     nextDates = Array.from({ length: nextMonthDays }, (_, index) => {
+      const date = nextMoment.clone().date(index + 1);
       return {
-        date: moment([...nextMonthData, index + 1]).format('YYYY-MM-DD'),
+        date: date.format('YYYY-MM-DD'),
         option: {},
       };
     });
@@ -75,10 +76,7 @@ const getMonthRenderDaysObj = (
  * @param fromDate
  * @param toDate
  */
-const getMonthPaddingTwoDate = (
-  fromDate: moment.Moment,
-  toDate: moment.Moment,
-) => {
+const getMonthPaddingTwoDate = (fromDate: moment.Moment, toDate: moment.Moment) => {
   const fromYear = fromDate.year();
   const fromMonth = fromDate.month();
   const toYear = toDate.year();
@@ -107,12 +105,6 @@ const getMonthPaddingTwoDate = (
   return result;
 };
 
-export {
-  getMonthData,
-  getMonthPaddingTwoDate,
-  getMonthRenderDays,
-  getMonthRenderDaysObj,
-  getRoundDays,
-};
+export { getMonthData, getMonthPaddingTwoDate, getMonthRenderDays, getMonthRenderDaysObj, getRoundDays };
 
 export type { RenderDaysType };
